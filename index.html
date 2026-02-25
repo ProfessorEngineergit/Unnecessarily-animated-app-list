@@ -325,6 +325,15 @@
       letter-spacing: 2px; pointer-events: none;
       backdrop-filter: blur(8px);
     }
+    /* ── DOWNLOAD BTN ──────────────────────────────────── */
+    #download-btn {
+      position: fixed; bottom: 54px; left: 20px;
+      background: rgba(0,0,16,0.75); border: 1px solid rgba(255,255,255,0.25);
+      border-radius: 20px; padding: 8px 18px;
+      color: #fff; cursor: pointer; font-family: inherit; font-size: 12px;
+      z-index: 100; transition: all 0.25s; backdrop-filter: blur(8px);
+    }
+    #download-btn:hover { background: rgba(255,255,255,0.1); }
   </style>
 </head>
 <body>
@@ -397,6 +406,9 @@
 <!-- ── ACHIEVEMENTS ──────────────────────────────────────── -->
 <div id="ach-container"></div>
 
+<!-- ── DOWNLOAD BUTTON ─────────────────────────────────── -->
+<button id="download-btn">⬇ Download List</button>
+
 <!-- ── RESET BUTTON ─────────────────────────────────────── -->
 <button id="reset-btn">↩ Galaxy View</button>
 
@@ -435,7 +447,7 @@ const CATEGORIES = [
   {
     id: 'design', emoji: '🎨', name: '🎨 Design, 3D & Video', short: 'Design',
     color: '#FF6B6B', hex: 0xFF6B6B,
-    orbitR: 32, orbitSpd: 0.28, orbitTilt: 0.15, orbitOff: 0,
+    orbitR: 48, orbitSpd: 0.07, orbitTilt: 0.15, orbitOff: 0,
     apps: [
       { name: 'Adobe After Effects 2025', p: ['Multi'] },
       { name: 'Adobe Illustrator 2025',   p: ['Multi'] },
@@ -460,7 +472,7 @@ const CATEGORIES = [
   {
     id: 'dev', emoji: '💻', name: '💻 Entwicklung & IT-Tools', short: 'Dev',
     color: '#4ECDC4', hex: 0x4ECDC4,
-    orbitR: 46, orbitSpd: 0.18, orbitTilt: -0.22, orbitOff: Math.PI * 2 / 7,
+    orbitR: 68, orbitSpd: 0.045, orbitTilt: -0.22, orbitOff: Math.PI * 2 / 7,
     apps: [
       { name: 'Android Studio',           p: ['Multi'] },
       { name: 'Arduino IDE',              p: ['Multi'] },
@@ -482,7 +494,7 @@ const CATEGORIES = [
   {
     id: 'office', emoji: '✍️', name: '✍️ Produktivität & Office', short: 'Office',
     color: '#45B7D1', hex: 0x45B7D1,
-    orbitR: 25, orbitSpd: 0.42, orbitTilt: 0.32, orbitOff: Math.PI * 4 / 7,
+    orbitR: 38, orbitSpd: 0.10, orbitTilt: 0.32, orbitOff: Math.PI * 4 / 7,
     apps: [
       { name: 'Adobe Acrobat',                      p: ['Multi']        },
       { name: 'Google Docs / Sheets / Slides',      p: ['Web', 'Multi'] },
@@ -499,7 +511,7 @@ const CATEGORIES = [
   {
     id: 'utils', emoji: '🛠', name: '🛠 Utilities & System-Optimierung', short: 'Utils',
     color: '#96CEB4', hex: 0x96CEB4,
-    orbitR: 38, orbitSpd: 0.14, orbitTilt: -0.1, orbitOff: Math.PI * 6 / 7,
+    orbitR: 56, orbitSpd: 0.035, orbitTilt: -0.1, orbitOff: Math.PI * 6 / 7,
     apps: [
       { name: 'AlDente',             p: ['Mac']   },
       { name: 'Backdrop',            p: ['Mac']   },
@@ -522,7 +534,7 @@ const CATEGORIES = [
   {
     id: 'gaming', emoji: '🕹', name: '🕹 Gaming, VR & Simulation', short: 'Gaming',
     color: '#FFEAA7', hex: 0xFFEAA7,
-    orbitR: 57, orbitSpd: 0.1, orbitTilt: 0.26, orbitOff: Math.PI,
+    orbitR: 85, orbitSpd: 0.025, orbitTilt: 0.26, orbitOff: Math.PI,
     apps: [
       { name: '3DMark / Cinebench',          p: ['Multi'] },
       { name: 'Bigscreen Remote Desktop',    p: ['Multi'] },
@@ -539,7 +551,7 @@ const CATEGORIES = [
   {
     id: 'audio', emoji: '🎵', name: '🎵 Audio & Musik', short: 'Audio',
     color: '#DDA0DD', hex: 0xDDA0DD,
-    orbitR: 20, orbitSpd: 0.65, orbitTilt: -0.38, orbitOff: Math.PI * 8 / 7,
+    orbitR: 30, orbitSpd: 0.16, orbitTilt: -0.38, orbitOff: Math.PI * 8 / 7,
     apps: [
       { name: 'djay Pro',                          p: ['Multi'] },
       { name: 'GarageBand',                        p: ['Mac']   },
@@ -550,7 +562,7 @@ const CATEGORIES = [
   {
     id: 'iot', emoji: '🏠', name: '🏠 Smart Home & IoT', short: 'IoT',
     color: '#98D8C8', hex: 0x98D8C8,
-    orbitR: 43, orbitSpd: 0.22, orbitTilt: 0.44, orbitOff: Math.PI * 10 / 7,
+    orbitR: 64, orbitSpd: 0.055, orbitTilt: 0.44, orbitOff: Math.PI * 10 / 7,
     apps: [
       { name: 'Aqara Home',    p: ['Multi'] },
       { name: 'Home Assistant',p: ['Multi'] },
@@ -607,6 +619,7 @@ const G = {
   toured: false,
   selectedCat: null,
   hoveredMesh: null,
+  hoveredCatIdx: -1,
   animating: false,
   autoTour: false,
   tourIdx: 0,
@@ -652,7 +665,7 @@ controls.autoRotateSpeed = 0.4;
 const composer = new EffectComposer(renderer);
 composer.addPass(new RenderPass(scene, camera));
 const bloomPass = new UnrealBloomPass(
-  new THREE.Vector2(innerWidth, innerHeight), 1.4, 0.45, 0.82
+  new THREE.Vector2(innerWidth, innerHeight), 0.9, 0.35, 0.88
 );
 composer.addPass(bloomPass);
 
@@ -916,11 +929,12 @@ function makeAppNode(app, cat, idx, total) {
   const baseAngle = (idx / total) * Math.PI * 2;
   const r = 5.5 + Math.random() * 2.5;
   const ht = (Math.random() - 0.5) * 4.5;
-  const spd = 0.9 + Math.random() * 1.8;
+  const spd = 0.18 + Math.random() * 0.22;
 
   grp.userData = {
     type: 'app', app, cat,
     baseAngle, r, ht, spd,
+    angle: baseAngle,
     discovered: false,
   };
   grp.position.set(Math.cos(baseAngle) * r, ht, Math.sin(baseAngle) * r);
@@ -1015,6 +1029,7 @@ const catObjs = CATEGORIES.map((cat, i) => {
     obj.grp.add(node);
     return node;
   });
+  obj.slowMult = 1.0;
   return obj;
 });
 
@@ -1091,6 +1106,8 @@ function focusCategory(idx) {
   G.selectedCat = idx;
   G.visitedCats.add(cat.id);
   controls.autoRotate = false;
+  // Slow app nodes for focused category, restore all others
+  catObjs.forEach((o, i) => { o.slowMult = (i === idx) ? 0.05 : 1.0; });
   document.getElementById('reset-btn').classList.add('visible');
 
   // Warp flash
@@ -1115,6 +1132,7 @@ function focusCategory(idx) {
 
 function resetView() {
   G.selectedCat = null;
+  catObjs.forEach(o => { o.slowMult = 1.0; });
   G.animating = true;
   lerpCam(new THREE.Vector3(0, 42, 105), new THREE.Vector3(0, 0, 0), 1400, () => {
     controls.autoRotate = true;
@@ -1275,6 +1293,10 @@ function doHover() {
       if (h.parent && h.parent.userData.labelEl)
         h.parent.userData.labelEl.style.display = 'none';
     }
+    // Restore speed unless this category is still the selected one
+    if (G.hoveredCatIdx >= 0 && G.hoveredCatIdx !== G.selectedCat)
+      catObjs[G.hoveredCatIdx].slowMult = 1.0;
+    G.hoveredCatIdx = -1;
     G.hoveredMesh = null;
     document.body.style.cursor = 'default';
     document.getElementById('crosshair').classList.remove('active');
@@ -1286,6 +1308,12 @@ function doHover() {
   G.hoveredMesh = h;
   document.body.style.cursor = 'pointer';
   document.getElementById('crosshair').classList.add('active');
+
+  // Slow down app nodes in the hovered category
+  let hCatIdx = -1;
+  if (h.userData.type === 'cat') hCatIdx = h.userData.catIdx;
+  else if (h.userData.type === 'app') hCatIdx = CATEGORIES.indexOf(h.userData.cat);
+  if (hCatIdx >= 0) { G.hoveredCatIdx = hCatIdx; catObjs[hCatIdx].slowMult = 0.05; }
 
   if (h.userData.type === 'cat') {
     h.material.emissiveIntensity = 1.2;
@@ -1418,7 +1446,7 @@ function animate() {
   hub.rings[1].rotation.z -= dt * 0.32;
   hub.rings[2].rotation.y += dt * 0.24;
   hub.atmos.material.opacity = 0.04 + Math.abs(Math.sin(T * 0.8)) * 0.06;
-  hubLight.intensity = 3.5 + Math.sin(T * 1.9) * 1.5;
+  hubLight.intensity = 3 + Math.sin(T * 1.9) * 0.5;
 
   // Orbit + app animation
   catObjs.forEach((cObj, ci) => {
@@ -1430,17 +1458,17 @@ function animate() {
       Math.sin(a) * cat.orbitR
     );
     cObj.planet.rotation.y += dt * (0.28 + ci * 0.04);
-    cObj.halo.material.opacity = 0.04 + Math.sin(T * 1.2 + ci) * 0.03;
+    cObj.halo.material.opacity = 0.05;
     if (cObj.ring) cObj.ring.rotation.y += dt * 0.6;
 
     // App nodes orbit
     cObj.appNodes.forEach((node, ni) => {
       const ud  = node.userData;
-      const ang = ud.baseAngle + T * ud.spd;
+      ud.angle += dt * ud.spd * cObj.slowMult;
       node.position.set(
-        Math.cos(ang) * ud.r,
+        Math.cos(ud.angle) * ud.r,
         ud.ht + Math.sin(T * 0.4 + ni * 0.7) * 0.35,
-        Math.sin(ang) * ud.r
+        Math.sin(ud.angle) * ud.r
       );
     });
 
@@ -1483,6 +1511,52 @@ function animate() {
   composer.render();
   labelRenderer.render(scene, camera);
 }
+
+// ═══════════════════════════════════════════════════════════
+//  DOWNLOAD APP LIST AS TXT
+// ═══════════════════════════════════════════════════════════
+function platformTag(platforms) {
+  const hasMac  = platforms.includes('Mac')   || platforms.includes('Multi');
+  const hasWin  = platforms.includes('Win')   || platforms.includes('Multi');
+  const hasWeb  = platforms.includes('Web');
+  if (hasMac && hasWin) return '[Mac + Windows]';
+  if (hasMac)           return '[Mac]';
+  if (hasWin)           return '[Windows]';
+  if (hasWeb)           return '[Web]';
+  return '[' + platforms.join(', ') + ']';
+}
+
+document.getElementById('download-btn').addEventListener('click', () => {
+  const LINE = '═'.repeat(48);
+  const line = '─'.repeat(48);
+  let txt = LINE + '\n';
+  txt += '  🚀 NEXUS APP GALAXY — Complete App List\n';
+  txt += '  Unnecessarily Complex Edition v3.0\n';
+  txt += LINE + '\n\n';
+
+  CATEGORIES.forEach(cat => {
+    txt += `${cat.emoji}  ${cat.name.replace(/^[^\w\s]*\s*/, '')}\n`;
+    txt += line + '\n';
+    cat.apps.forEach(app => {
+      const tag = platformTag(app.p);
+      txt += `  • ${app.name.padEnd(40)} ${tag}\n`;
+    });
+    txt += '\n';
+  });
+
+  txt += LINE + '\n';
+  txt += `  Total: ${TOTAL_APPS} apps across ${CATEGORIES.length} categories\n`;
+  txt += LINE + '\n';
+
+  const blob = new Blob([txt], { type: 'text/plain; charset=utf-8' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = 'nexus-app-list.txt';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+});
 
 // ═══════════════════════════════════════════════════════════
 //  INIT
