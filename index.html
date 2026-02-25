@@ -1,0 +1,1508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🚀 NEXUS APP GALAXY — Unnecessarily Complex Edition</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #000010;
+      overflow: hidden;
+      font-family: 'Courier New', Courier, monospace;
+      color: #fff;
+      user-select: none;
+    }
+
+    /* ── LOADER ──────────────────────────────────────────── */
+    #loader {
+      position: fixed; inset: 0;
+      background: #000010;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      z-index: 9999;
+      transition: opacity 0.8s ease;
+    }
+    #loader.hidden { opacity: 0; pointer-events: none; }
+
+    .loader-logo {
+      font-size: 4rem; margin-bottom: 0.5rem;
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+    .loader-title {
+      font-size: 2rem; font-weight: bold; letter-spacing: 6px;
+      background: linear-gradient(135deg, #FF6B6B, #4ECDC4, #FFEAA7, #DDA0DD);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 0.4rem;
+    }
+    .loader-subtitle {
+      font-size: 0.75rem; letter-spacing: 4px; opacity: 0.4;
+      margin-bottom: 2.5rem; text-transform: uppercase;
+    }
+    .loader-bar-wrap {
+      width: 320px; height: 3px;
+      background: rgba(255,255,255,0.08); border-radius: 3px; overflow: hidden;
+      margin-bottom: 1rem;
+    }
+    .loader-bar {
+      height: 100%;
+      background: linear-gradient(90deg, #4ECDC4, #FF6B6B, #FFEAA7);
+      border-radius: 3px;
+      animation: loadFill 2.4s cubic-bezier(0.4,0,0.2,1) forwards;
+    }
+    .loader-hint {
+      font-size: 0.65rem; opacity: 0.35; letter-spacing: 2px;
+    }
+    @keyframes loadFill { from { width: 0 } to { width: 100% } }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); filter: drop-shadow(0 0 10px #4ECDC4); }
+      50%       { transform: scale(1.1); filter: drop-shadow(0 0 30px #FF6B6B); }
+    }
+
+    /* ── CANVAS & OVERLAY ──────────────────────────────── */
+    #three-canvas {
+      position: fixed; inset: 0; display: block;
+    }
+    .vignette {
+      position: fixed; inset: 0;
+      background: radial-gradient(ellipse at center, transparent 55%, rgba(0,0,16,0.75) 100%);
+      pointer-events: none; z-index: 5;
+    }
+    .scanline {
+      position: fixed; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, transparent, rgba(78,205,196,0.07), transparent);
+      animation: scan 10s linear infinite;
+      pointer-events: none; z-index: 6;
+    }
+    @keyframes scan { from { top: -2px } to { top: 100vh } }
+
+    /* ── HUD TOP BAR ───────────────────────────────────── */
+    #hud {
+      position: fixed; top: 0; left: 0; right: 0; height: 58px;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 20px;
+      background: linear-gradient(180deg, rgba(0,0,16,0.85) 0%, transparent 100%);
+      z-index: 100; pointer-events: none;
+    }
+    .hud-score {
+      font-size: 22px; font-weight: bold; color: #FFEAA7;
+      text-shadow: 0 0 18px #FFEAA7, 0 0 40px rgba(255,234,167,0.4);
+    }
+    .hud-combo {
+      font-size: 14px; color: #FF6B6B;
+      text-shadow: 0 0 12px #FF6B6B;
+      transition: all 0.3s;
+    }
+    .hud-center { text-align: center; }
+    .hud-center-title {
+      font-size: 13px; letter-spacing: 5px; text-transform: uppercase; opacity: 0.85;
+    }
+    .hud-center-sub {
+      font-size: 9px; letter-spacing: 2px; opacity: 0.3; margin-top: 2px;
+    }
+    .hud-right { text-align: right; }
+    .hud-ach  { font-size: 12px; opacity: 0.75; }
+    .hud-apps { font-size: 10px; opacity: 0.45; margin-top: 3px; }
+
+    /* ── SEARCH ────────────────────────────────────────── */
+    #search-wrap {
+      position: fixed; top: 64px; left: 50%;
+      transform: translateX(-50%);
+      z-index: 100;
+    }
+    #search-input {
+      background: rgba(0,0,16,0.75);
+      border: 1px solid rgba(255,255,255,0.18);
+      border-radius: 24px;
+      padding: 9px 22px; color: #fff;
+      font-size: 13px; font-family: inherit;
+      width: 280px; outline: none;
+      backdrop-filter: blur(10px);
+      transition: all 0.35s;
+    }
+    #search-input:focus {
+      border-color: #4ECDC4;
+      box-shadow: 0 0 22px rgba(78,205,196,0.3);
+      width: 380px;
+    }
+    #search-input::placeholder { color: rgba(255,255,255,0.3); }
+
+    /* ── PLATFORM FILTER ───────────────────────────────── */
+    #platform-filter {
+      position: fixed; top: 64px; right: 20px;
+      z-index: 100; display: flex; gap: 7px;
+    }
+    .filter-btn {
+      padding: 6px 13px; border-radius: 18px;
+      border: 1px solid rgba(255,255,255,0.2);
+      background: rgba(0,0,16,0.7); color: rgba(255,255,255,0.7);
+      cursor: pointer; font-size: 11px; font-family: inherit;
+      transition: all 0.25s; backdrop-filter: blur(6px);
+    }
+    .filter-btn:hover { background: rgba(255,255,255,0.08); color: #fff; }
+    .filter-btn.active {
+      background: rgba(255,255,255,0.15); color: #fff;
+      border-color: rgba(255,255,255,0.5);
+      box-shadow: 0 0 12px rgba(255,255,255,0.1);
+    }
+
+    /* ── STATS ─────────────────────────────────────────── */
+    #stats {
+      position: fixed; top: 68px; left: 20px;
+      z-index: 100; font-size: 10px; opacity: 0.4; line-height: 1.9;
+      pointer-events: none;
+    }
+
+    /* ── SIDEBAR ───────────────────────────────────────── */
+    #sidebar {
+      position: fixed; left: 16px; top: 50%;
+      transform: translateY(-50%);
+      z-index: 100; display: flex; flex-direction: column; gap: 7px;
+    }
+    .cat-btn {
+      display: flex; align-items: center; gap: 8px;
+      background: rgba(0,0,16,0.72);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 9px; padding: 7px 11px;
+      cursor: pointer; font-family: inherit; font-size: 11px; color: #fff;
+      transition: all 0.25s; backdrop-filter: blur(6px);
+      white-space: nowrap;
+    }
+    .cat-btn:hover { background: rgba(255,255,255,0.07); transform: translateX(4px); }
+    .cat-btn.active { border-color: currentColor; box-shadow: 0 0 14px currentColor; }
+    .cat-prog-wrap {
+      width: 52px; height: 3px;
+      background: rgba(255,255,255,0.08); border-radius: 2px; overflow: hidden;
+    }
+    .cat-prog-fill { height: 100%; border-radius: 2px; transition: width 0.5s ease; }
+    .app-count-badge {
+      background: rgba(255,255,255,0.14); border-radius: 8px;
+      padding: 1px 5px; font-size: 9px;
+    }
+
+    /* ── INFO PANEL ────────────────────────────────────── */
+    #info-panel {
+      position: fixed; right: 16px; top: 50%;
+      transform: translateY(-50%);
+      width: 240px;
+      background: rgba(0,0,16,0.88);
+      border: 1px solid rgba(255,255,255,0.14);
+      border-radius: 16px; padding: 18px;
+      z-index: 100; backdrop-filter: blur(12px);
+      display: none;
+    }
+    #info-panel.visible {
+      display: block;
+      animation: slideInRight 0.3s ease;
+    }
+    @keyframes slideInRight {
+      from { opacity: 0; transform: translateY(-50%) translateX(20px); }
+      to   { opacity: 1; transform: translateY(-50%) translateX(0); }
+    }
+    .info-icon   { font-size: 2.2rem; margin-bottom: 8px; }
+    .info-name   { font-size: 16px; font-weight: bold; margin-bottom: 6px; line-height: 1.3; }
+    .info-cat    { font-size: 10px; opacity: 0.5; margin-bottom: 12px; }
+    .info-score  { font-size: 13px; color: #FFEAA7; margin-top: 10px; }
+    .platform-badge {
+      display: inline-block; padding: 2px 7px; border-radius: 4px;
+      font-size: 10px; font-weight: bold; margin: 2px 2px 2px 0;
+    }
+    .badge-multi { background: #4ECDC4; color: #000; }
+    .badge-mac   { background: #888;    color: #fff; }
+    .badge-win   { background: #0078d4; color: #fff; }
+    .badge-web   { background: #FF6B6B; color: #fff; }
+
+    /* ── ACHIEVEMENTS ──────────────────────────────────── */
+    #ach-container {
+      position: fixed; bottom: 56px; right: 16px;
+      z-index: 200; display: flex; flex-direction: column-reverse; gap: 8px;
+      pointer-events: none;
+    }
+    .ach-toast {
+      background: rgba(0,0,16,0.92);
+      border: 2px solid #FFEAA7;
+      border-radius: 12px; padding: 11px 14px; min-width: 240px;
+      animation: achIn 0.4s ease, achOut 0.4s ease 3.6s forwards;
+      box-shadow: 0 0 28px rgba(255,234,167,0.25);
+    }
+    @keyframes achIn  { from { opacity:0; transform:translateX(110%) } to { opacity:1; transform:translateX(0) } }
+    @keyframes achOut { from { opacity:1; transform:translateX(0) }     to { opacity:0; transform:translateX(110%) } }
+    .ach-label { font-size: 9px; color: #FFEAA7; letter-spacing: 2px; text-transform: uppercase; }
+    .ach-name  { font-size: 15px; font-weight: bold; margin: 3px 0 2px; }
+    .ach-desc  { font-size: 10px; opacity: 0.6; }
+
+    /* ── FLOATING SCORE POP ────────────────────────────── */
+    .score-pop {
+      position: fixed; pointer-events: none; z-index: 300;
+      font-size: 20px; font-weight: bold; color: #FFEAA7;
+      text-shadow: 0 0 15px #FFEAA7;
+      animation: scorePop 1.2s ease forwards;
+    }
+    @keyframes scorePop {
+      0%   { opacity: 1; transform: translateY(0) scale(1); }
+      100% { opacity: 0; transform: translateY(-60px) scale(0.7); }
+    }
+
+    /* ── BOTTOM BAR ────────────────────────────────────── */
+    #bottom-bar {
+      position: fixed; bottom: 0; left: 0; right: 0; height: 48px;
+      background: linear-gradient(0deg, rgba(0,0,16,0.8) 0%, transparent 100%);
+      display: flex; align-items: center; justify-content: center; gap: 26px;
+      z-index: 100; font-size: 11px; opacity: 0.5; pointer-events: none;
+    }
+    .key-hint { display: flex; align-items: center; gap: 5px; }
+    .key {
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 4px; padding: 1px 7px; font-size: 10px;
+    }
+
+    /* ── RESET BTN ─────────────────────────────────────── */
+    #reset-btn {
+      position: fixed; bottom: 54px; left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0,0,16,0.75); border: 1px solid rgba(255,255,255,0.25);
+      border-radius: 20px; padding: 8px 22px;
+      color: #fff; cursor: pointer; font-family: inherit; font-size: 12px;
+      z-index: 100; display: none; transition: all 0.25s;
+      backdrop-filter: blur(8px);
+    }
+    #reset-btn:hover { background: rgba(255,255,255,0.1); }
+    #reset-btn.visible { display: block; animation: fadeIn 0.3s ease; }
+    @keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
+
+    /* ── CROSSHAIR ─────────────────────────────────────── */
+    #crosshair {
+      position: fixed; top: 50%; left: 50%;
+      transform: translate(-50%,-50%);
+      width: 18px; height: 18px;
+      pointer-events: none; z-index: 50; opacity: 0.2;
+      transition: opacity 0.2s, transform 0.2s;
+    }
+    #crosshair.active { opacity: 0.9; transform: translate(-50%,-50%) scale(1.6); }
+    #crosshair::before, #crosshair::after {
+      content: ''; position: absolute; background: rgba(255,255,255,0.9);
+    }
+    #crosshair::before { width: 1px; height: 100%; left: 50%; top: 0; }
+    #crosshair::after  { width: 100%; height: 1px; top: 50%; left: 0; }
+
+    /* ── TOOLTIP ───────────────────────────────────────── */
+    #tooltip {
+      position: fixed; pointer-events: none; z-index: 150;
+      background: rgba(0,0,16,0.9); border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 8px; padding: 6px 12px; font-size: 12px;
+      backdrop-filter: blur(8px); display: none;
+      white-space: nowrap;
+    }
+
+    /* ── CSS2D LABELS ──────────────────────────────────── */
+    .cat-label {
+      background: rgba(0,0,16,0.85);
+      border: 1.5px solid currentColor;
+      border-radius: 10px; padding: 5px 12px;
+      font-size: 12px; font-weight: bold;
+      white-space: nowrap; pointer-events: none;
+      backdrop-filter: blur(6px);
+      text-shadow: 0 0 8px currentColor;
+      letter-spacing: 1px;
+    }
+    .app-label {
+      background: rgba(0,0,16,0.8);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 6px; padding: 4px 9px;
+      font-size: 10px; white-space: nowrap;
+      pointer-events: none; backdrop-filter: blur(4px);
+      max-width: 140px; overflow: hidden; text-overflow: ellipsis;
+    }
+    .hub-label {
+      background: rgba(0,0,50,0.85);
+      border: 2px solid #4466ff;
+      border-radius: 12px; padding: 6px 14px;
+      font-size: 13px; font-weight: bold;
+      color: #88aaff; text-shadow: 0 0 12px #4466ff;
+      letter-spacing: 2px; pointer-events: none;
+      backdrop-filter: blur(8px);
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── LOADER ──────────────────────────────────────────── -->
+<div id="loader">
+  <div class="loader-logo">🚀</div>
+  <div class="loader-title">NEXUS APP GALAXY</div>
+  <div class="loader-subtitle">Unnecessarily Complex Edition v3.0</div>
+  <div class="loader-bar-wrap"><div class="loader-bar"></div></div>
+  <div class="loader-hint">LOADING 76 APPS · 7 GALAXIES · ∞ COMPLEXITY</div>
+</div>
+
+<!-- ── OVERLAYS ─────────────────────────────────────────── -->
+<div class="vignette"></div>
+<div class="scanline"></div>
+<div id="crosshair"></div>
+<div id="tooltip"></div>
+
+<!-- ── CANVAS ──────────────────────────────────────────── -->
+<canvas id="three-canvas"></canvas>
+
+<!-- ── HUD ─────────────────────────────────────────────── -->
+<div id="hud">
+  <div>
+    <div class="hud-score">⚡ <span id="score-val">0</span></div>
+    <div class="hud-combo" id="combo-el" style="display:none">✕<span id="combo-val">1</span> COMBO</div>
+  </div>
+  <div class="hud-center">
+    <div class="hud-center-title">🚀 NEXUS APP GALAXY</div>
+    <div class="hud-center-sub">UNNECESSARILY COMPLEX · THREE.JS EDITION</div>
+  </div>
+  <div class="hud-right">
+    <div class="hud-ach">🏆 <span id="ach-count">0</span>/20 Achievements</div>
+    <div class="hud-apps">📱 <span id="apps-found">0</span>/<span id="apps-total">76</span> Apps Discovered</div>
+  </div>
+</div>
+
+<!-- ── SEARCH ───────────────────────────────────────────── -->
+<div id="search-wrap">
+  <input type="text" id="search-input" placeholder="🔍 Search apps…" autocomplete="off" spellcheck="false">
+</div>
+
+<!-- ── PLATFORM FILTER ──────────────────────────────────── -->
+<div id="platform-filter">
+  <button class="filter-btn active" data-filter="all">ALL</button>
+  <button class="filter-btn" data-filter="Mac">🍎 Mac</button>
+  <button class="filter-btn" data-filter="Win">🪟 Win</button>
+  <button class="filter-btn" data-filter="Multi">🌐 Multi</button>
+</div>
+
+<!-- ── STATS ─────────────────────────────────────────────── -->
+<div id="stats">
+  APPS: 76 &nbsp;|&nbsp; CATS: 7<br>
+  FPS: <span id="fps-val">60</span>
+</div>
+
+<!-- ── SIDEBAR ───────────────────────────────────────────── -->
+<div id="sidebar"></div>
+
+<!-- ── INFO PANEL ───────────────────────────────────────── -->
+<div id="info-panel">
+  <div class="info-icon" id="info-icon"></div>
+  <div class="info-name" id="info-name"></div>
+  <div class="info-cat"  id="info-cat"></div>
+  <div id="info-platforms"></div>
+  <div class="info-score" id="info-score"></div>
+</div>
+
+<!-- ── ACHIEVEMENTS ──────────────────────────────────────── -->
+<div id="ach-container"></div>
+
+<!-- ── RESET BUTTON ─────────────────────────────────────── -->
+<button id="reset-btn">↩ Galaxy View</button>
+
+<!-- ── BOTTOM BAR ───────────────────────────────────────── -->
+<div id="bottom-bar">
+  <span class="key-hint"><span class="key">Click</span> Select</span>
+  <span class="key-hint"><span class="key">Drag</span> Orbit</span>
+  <span class="key-hint"><span class="key">Scroll</span> Zoom</span>
+  <span class="key-hint"><span class="key">1–7</span> Jump Category</span>
+  <span class="key-hint"><span class="key">Space</span> Auto-Tour</span>
+  <span class="key-hint"><span class="key">ESC</span> Reset</span>
+</div>
+
+<!-- ── IMPORTMAP ─────────────────────────────────────────── -->
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls }   from 'three/addons/controls/OrbitControls.js';
+import { EffectComposer }  from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass }      from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+
+// ═══════════════════════════════════════════════════════════
+//  APP DATA
+// ═══════════════════════════════════════════════════════════
+const CATEGORIES = [
+  {
+    id: 'design', emoji: '🎨', name: '🎨 Design, 3D & Video', short: 'Design',
+    color: '#FF6B6B', hex: 0xFF6B6B,
+    orbitR: 32, orbitSpd: 0.28, orbitTilt: 0.15, orbitOff: 0,
+    apps: [
+      { name: 'Adobe After Effects 2025', p: ['Multi'] },
+      { name: 'Adobe Illustrator 2025',   p: ['Multi'] },
+      { name: 'Adobe Lightroom',          p: ['Multi'] },
+      { name: 'Adobe Photoshop 2025',     p: ['Multi'] },
+      { name: 'Affinity Suite',           p: ['Multi'] },
+      { name: 'Autodesk Fusion',          p: ['Multi'] },
+      { name: 'BambuStudio',              p: ['Multi'] },
+      { name: 'Blender',                  p: ['Multi'] },
+      { name: 'Canva',                    p: ['Multi'] },
+      { name: 'CapCut',                   p: ['Multi'] },
+      { name: 'Compressor',               p: ['Mac']   },
+      { name: 'DaVinci Resolve',          p: ['Multi'] },
+      { name: 'Final Cut Pro',            p: ['Mac']   },
+      { name: 'Gling',                    p: ['Multi'] },
+      { name: 'GridfinityGenerator',      p: ['Multi'] },
+      { name: 'Motion',                   p: ['Mac']   },
+      { name: 'Pixelmator Pro',           p: ['Mac']   },
+      { name: 'Shapr3D',                  p: ['Multi'] },
+    ]
+  },
+  {
+    id: 'dev', emoji: '💻', name: '💻 Entwicklung & IT-Tools', short: 'Dev',
+    color: '#4ECDC4', hex: 0x4ECDC4,
+    orbitR: 46, orbitSpd: 0.18, orbitTilt: -0.22, orbitOff: Math.PI * 2 / 7,
+    apps: [
+      { name: 'Android Studio',           p: ['Multi'] },
+      { name: 'Arduino IDE',              p: ['Multi'] },
+      { name: 'Codex',                    p: ['Multi'] },
+      { name: 'Docker',                   p: ['Multi'] },
+      { name: 'eDEX-UI',                  p: ['Multi'] },
+      { name: 'FileZilla',                p: ['Multi'] },
+      { name: 'GitHub Copilot for Xcode', p: ['Mac']   },
+      { name: 'LM Studio',                p: ['Multi'] },
+      { name: 'VS Code',                  p: ['Multi'] },
+      { name: 'Ollama',                   p: ['Multi'] },
+      { name: 'Swift Playground',         p: ['Multi'] },
+      { name: 'Termius',                  p: ['Multi'] },
+      { name: 'Thonny',                   p: ['Multi'] },
+      { name: 'UTM',                      p: ['Mac']   },
+      { name: 'Xcode',                    p: ['Mac']   },
+    ]
+  },
+  {
+    id: 'office', emoji: '✍️', name: '✍️ Produktivität & Office', short: 'Office',
+    color: '#45B7D1', hex: 0x45B7D1,
+    orbitR: 25, orbitSpd: 0.42, orbitTilt: 0.32, orbitOff: Math.PI * 4 / 7,
+    apps: [
+      { name: 'Adobe Acrobat',                      p: ['Multi']        },
+      { name: 'Google Docs / Sheets / Slides',      p: ['Web', 'Multi'] },
+      { name: 'Keynote',                            p: ['Mac']          },
+      { name: 'Microsoft Excel / Word / PowerPoint',p: ['Multi']        },
+      { name: 'Numbers',                            p: ['Mac']          },
+      { name: 'Obsidian',                           p: ['Multi']        },
+      { name: 'Pages',                              p: ['Mac']          },
+      { name: 'Slack',                              p: ['Multi']        },
+      { name: 'WhatsApp',                           p: ['Multi']        },
+      { name: 'Zoom / Zoom Workplace',              p: ['Multi']        },
+    ]
+  },
+  {
+    id: 'utils', emoji: '🛠', name: '🛠 Utilities & System-Optimierung', short: 'Utils',
+    color: '#96CEB4', hex: 0x96CEB4,
+    orbitR: 38, orbitSpd: 0.14, orbitTilt: -0.1, orbitOff: Math.PI * 6 / 7,
+    apps: [
+      { name: 'AlDente',             p: ['Mac']   },
+      { name: 'Backdrop',            p: ['Mac']   },
+      { name: 'balenaEtcher',        p: ['Multi'] },
+      { name: 'BetterDisplay',       p: ['Mac']   },
+      { name: 'CleanMyMac 5',        p: ['Mac']   },
+      { name: 'DockDoor',            p: ['Mac']   },
+      { name: 'ExpressVPN',          p: ['Multi'] },
+      { name: 'iStat Menus',         p: ['Mac']   },
+      { name: 'LocalSend',           p: ['Multi'] },
+      { name: 'Logi Options+',       p: ['Multi'] },
+      { name: 'Macs Fan Control',    p: ['Multi'] },
+      { name: 'Mousecape',           p: ['Mac']   },
+      { name: 'PowerToys',           p: ['Win']   },
+      { name: 'Raspberry Pi Imager', p: ['Multi'] },
+      { name: 'Windhawk',            p: ['Win']   },
+      { name: 'WireGuard',           p: ['Multi'] },
+    ]
+  },
+  {
+    id: 'gaming', emoji: '🕹', name: '🕹 Gaming, VR & Simulation', short: 'Gaming',
+    color: '#FFEAA7', hex: 0xFFEAA7,
+    orbitR: 57, orbitSpd: 0.1, orbitTilt: 0.26, orbitOff: Math.PI,
+    apps: [
+      { name: '3DMark / Cinebench',          p: ['Multi'] },
+      { name: 'Bigscreen Remote Desktop',    p: ['Multi'] },
+      { name: 'Epic Games Launcher',         p: ['Multi'] },
+      { name: 'Meta Quest Remote Desktop',   p: ['Multi'] },
+      { name: 'NVIDIA GeForce NOW',          p: ['Multi'] },
+      { name: 'Oculus / SteamVR',            p: ['Win']   },
+      { name: 'SideQuest',                   p: ['Multi'] },
+      { name: 'SpaceEngine',                 p: ['Win']   },
+      { name: 'Steam',                       p: ['Multi'] },
+      { name: 'Ubisoft Connect',             p: ['Win']   },
+    ]
+  },
+  {
+    id: 'audio', emoji: '🎵', name: '🎵 Audio & Musik', short: 'Audio',
+    color: '#DDA0DD', hex: 0xDDA0DD,
+    orbitR: 20, orbitSpd: 0.65, orbitTilt: -0.38, orbitOff: Math.PI * 8 / 7,
+    apps: [
+      { name: 'djay Pro',                          p: ['Multi'] },
+      { name: 'GarageBand',                        p: ['Mac']   },
+      { name: 'MainStage',                         p: ['Mac']   },
+      { name: 'ROLI Connect / Dashboard / Studio', p: ['Multi'] },
+    ]
+  },
+  {
+    id: 'iot', emoji: '🏠', name: '🏠 Smart Home & IoT', short: 'IoT',
+    color: '#98D8C8', hex: 0x98D8C8,
+    orbitR: 43, orbitSpd: 0.22, orbitTilt: 0.44, orbitOff: Math.PI * 10 / 7,
+    apps: [
+      { name: 'Aqara Home',    p: ['Multi'] },
+      { name: 'Home Assistant',p: ['Multi'] },
+      { name: 'MINDSTORMS',    p: ['Multi'] },
+    ]
+  },
+];
+
+const TOTAL_APPS = CATEGORIES.reduce((s, c) => s + c.apps.length, 0); // 76
+
+// Pre-compute lists for achievement checks (avoids repeated flatMap/find in hot path)
+const ALL_APPS      = CATEGORIES.flatMap(c => c.apps);
+const MAC_ONLY_APPS = ALL_APPS.filter(a => a.p.length === 1 && a.p[0] === 'Mac');
+const WIN_ONLY_APPS = ALL_APPS.filter(a => a.p.includes('Win') && !a.p.includes('Multi'));
+
+// ═══════════════════════════════════════════════════════════
+//  ACHIEVEMENTS
+// ═══════════════════════════════════════════════════════════
+const ACHIEVEMENTS = [
+  { id:'first',       name:'🚀 First Contact',      desc:'Click your first app',                    check: g => g.found.size >= 1 },
+  { id:'10apps',      name:'🌟 Explorer',            desc:'Discover 10 apps',                        check: g => g.found.size >= 10 },
+  { id:'half',        name:'⭐ Halfway There',       desc:`Discover ${Math.ceil(TOTAL_APPS/2)}+ apps`,  check: g => g.found.size >= Math.ceil(TOTAL_APPS / 2) },
+  { id:'all',         name:'🏆 Galaxy Explorer',     desc:`Discover all ${TOTAL_APPS} apps`,         check: g => g.found.size >= TOTAL_APPS },
+  { id:'design',      name:'🎨 Creative Genius',     desc:'Complete Design category',                check: g => CATEGORIES[0].apps.every(a => g.found.has(a.name)) },
+  { id:'dev',         name:'💻 Code Wizard',         desc:'Complete Dev category',                   check: g => CATEGORIES[1].apps.every(a => g.found.has(a.name)) },
+  { id:'office',      name:'✍️ Productivity God',    desc:'Complete Office category',                check: g => CATEGORIES[2].apps.every(a => g.found.has(a.name)) },
+  { id:'utils',       name:'🛠 System Wizard',       desc:'Complete Utilities category',             check: g => CATEGORIES[3].apps.every(a => g.found.has(a.name)) },
+  { id:'gaming',      name:'🕹 Game Master',         desc:'Complete Gaming category',                check: g => CATEGORIES[4].apps.every(a => g.found.has(a.name)) },
+  { id:'audio',       name:'🎵 Maestro',             desc:'Complete Audio category',                 check: g => CATEGORIES[5].apps.every(a => g.found.has(a.name)) },
+  { id:'iot',         name:'🏠 Smart Home Pro',      desc:'Complete IoT category',                   check: g => CATEGORIES[6].apps.every(a => g.found.has(a.name)) },
+  { id:'allcats',     name:'🌌 Universe Master',     desc:'Visit all 7 categories',                  check: g => g.visitedCats.size >= 7 },
+  { id:'combo3',      name:'🔥 Triple Combo',        desc:'Reach ×3 combo',                          check: g => g.maxCombo >= 3 },
+  { id:'combo5',      name:'💥 Penta Combo',         desc:'Reach ×5 combo',                          check: g => g.maxCombo >= 5 },
+  { id:'score1k',     name:'⚡ Power User',          desc:'Score 1 000 points',                      check: g => g.score >= 1000 },
+  { id:'score5k',     name:'🌠 Superstar',           desc:'Score 5 000 points',                      check: g => g.score >= 5000 },
+  { id:'mac10',       name:'🍎 Apple Fan',           desc:'Discover 10 Mac-only apps',               check: g => MAC_ONLY_APPS.filter(a => g.found.has(a.name)).length >= 10 },
+  { id:'win',         name:'🪟 Windows Warrior',     desc:'Discover all Windows apps',               check: g => WIN_ONLY_APPS.every(a => g.found.has(a.name)) },
+  { id:'search',      name:'🔍 Detective',           desc:'Use the search bar',                      check: g => g.searched },
+  { id:'tour',        name:'🎢 Tour Guide',          desc:'Use the auto-tour',                       check: g => g.toured },
+];
+
+// ═══════════════════════════════════════════════════════════
+//  GAME STATE
+// ═══════════════════════════════════════════════════════════
+const G = {
+  score: 0, combo: 1, maxCombo: 1,
+  comboTimer: null,
+  found: new Set(),
+  visitedCats: new Set(),
+  unlockedAch: new Set(),
+  filter: 'all',
+  searchQ: '',
+  searched: false,
+  toured: false,
+  selectedCat: null,
+  hoveredMesh: null,
+  animating: false,
+  autoTour: false,
+  tourIdx: 0,
+  tourTimer: null,
+  fps: 60, frames: 0, fpsLast: Date.now(),
+};
+
+// ═══════════════════════════════════════════════════════════
+//  THREE.JS INIT
+// ═══════════════════════════════════════════════════════════
+const canvas = document.getElementById('three-canvas');
+
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.3;
+
+const labelRenderer = new CSS2DRenderer();
+labelRenderer.setSize(innerWidth, innerHeight);
+Object.assign(labelRenderer.domElement.style, {
+  position: 'fixed', top: '0', pointerEvents: 'none', zIndex: '8',
+});
+document.body.appendChild(labelRenderer.domElement);
+
+const scene = new THREE.Scene();
+scene.fog = new THREE.FogExp2(0x000010, 0.0025);
+scene.background = new THREE.Color(0x000010);
+
+const camera = new THREE.PerspectiveCamera(60, innerWidth / innerHeight, 0.1, 3000);
+camera.position.set(0, 42, 105);
+camera.lookAt(0, 0, 0);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.04;
+controls.minDistance = 12;
+controls.maxDistance = 220;
+controls.autoRotate = true;
+controls.autoRotateSpeed = 0.4;
+
+// Post-processing
+const composer = new EffectComposer(renderer);
+composer.addPass(new RenderPass(scene, camera));
+const bloomPass = new UnrealBloomPass(
+  new THREE.Vector2(innerWidth, innerHeight), 1.4, 0.45, 0.82
+);
+composer.addPass(bloomPass);
+
+// ═══════════════════════════════════════════════════════════
+//  LIGHTING
+// ═══════════════════════════════════════════════════════════
+scene.add(new THREE.AmbientLight(0x111133, 1.2));
+
+const hubLight = new THREE.PointLight(0x4466ff, 5, 220);
+scene.add(hubLight);
+
+const rimL1 = new THREE.PointLight(0xff4455, 2.5, 160);
+rimL1.position.set(60, 40, -60);
+scene.add(rimL1);
+
+const rimL2 = new THREE.PointLight(0x44ff88, 2, 140);
+rimL2.position.set(-60, -40, 60);
+scene.add(rimL2);
+
+// ═══════════════════════════════════════════════════════════
+//  STAR FIELD
+// ═══════════════════════════════════════════════════════════
+function makeStars() {
+  const N = 6000;
+  const pos = new Float32Array(N * 3);
+  const col = new Float32Array(N * 3);
+  const sz  = new Float32Array(N);
+  for (let i = 0; i < N; i++) {
+    const th = Math.random() * Math.PI * 2;
+    const ph = Math.acos(2 * Math.random() - 1);
+    const r  = 400 + Math.random() * 800;
+    pos[i*3]   = r * Math.sin(ph) * Math.cos(th);
+    pos[i*3+1] = r * Math.sin(ph) * Math.sin(th);
+    pos[i*3+2] = r * Math.cos(ph);
+    const t = Math.random();
+    if (t < 0.65)      { col[i*3]=1;   col[i*3+1]=1;   col[i*3+2]=1;   }
+    else if (t < 0.82) { col[i*3]=0.7; col[i*3+1]=0.8; col[i*3+2]=1;   }
+    else               { col[i*3]=1;   col[i*3+1]=0.9; col[i*3+2]=0.6; }
+    sz[i] = Math.random() * 2.2 + 0.4;
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  geo.setAttribute('color',    new THREE.BufferAttribute(col, 3));
+  geo.setAttribute('size',     new THREE.BufferAttribute(sz,  1));
+  const mat = new THREE.ShaderMaterial({
+    uniforms: { uTime: { value: 0 } },
+    vertexShader: `
+      attribute float size; attribute vec3 color; varying vec3 vCol;
+      uniform float uTime;
+      void main() {
+        vCol = color;
+        vec4 mv = modelViewMatrix * vec4(position, 1.0);
+        gl_PointSize = size * (220.0 / -mv.z) * (0.8 + 0.2 * sin(uTime * 1.8 + position.x * 0.01));
+        gl_Position  = projectionMatrix * mv;
+      }`,
+    fragmentShader: `
+      varying vec3 vCol;
+      void main() {
+        float d = length(gl_PointCoord - 0.5);
+        if (d > 0.5) discard;
+        gl_FragColor = vec4(vCol, (1.0 - d * 2.0));
+      }`,
+    transparent: true, vertexColors: true, depthWrite: false,
+  });
+  const pts = new THREE.Points(geo, mat);
+  scene.add(pts);
+  return { pts, mat };
+}
+
+// ═══════════════════════════════════════════════════════════
+//  NEBULA CLOUD
+// ═══════════════════════════════════════════════════════════
+function makeNebula() {
+  const N = 600;
+  const pos = new Float32Array(N * 3);
+  const col = new Float32Array(N * 3);
+  const palette = [0x4466FF, 0xFF4466, 0x44FFAA, 0xAA44FF, 0xFF8844].map(h => new THREE.Color(h));
+  for (let i = 0; i < N; i++) {
+    pos[i*3]   = (Math.random() - 0.5) * 350;
+    pos[i*3+1] = (Math.random() - 0.5) * 120;
+    pos[i*3+2] = (Math.random() - 0.5) * 350;
+    const c = palette[i % palette.length];
+    col[i*3] = c.r; col[i*3+1] = c.g; col[i*3+2] = c.b;
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  geo.setAttribute('color',    new THREE.BufferAttribute(col, 3));
+  const mat = new THREE.ShaderMaterial({
+    vertexShader: `
+      attribute vec3 color; varying vec3 vCol;
+      void main() {
+        vCol = color;
+        vec4 mv = modelViewMatrix * vec4(position, 1.0);
+        gl_PointSize = 38.0 * (220.0 / -mv.z);
+        gl_Position  = projectionMatrix * mv;
+      }`,
+    fragmentShader: `
+      varying vec3 vCol;
+      void main() {
+        float d = length(gl_PointCoord - 0.5);
+        if (d > 0.5) discard;
+        gl_FragColor = vec4(vCol, (1.0 - d * 2.0) * 0.045);
+      }`,
+    transparent: true, vertexColors: true, depthWrite: false,
+    blending: THREE.AdditiveBlending,
+  });
+  const pts = new THREE.Points(geo, mat);
+  scene.add(pts);
+  return pts;
+}
+
+// ═══════════════════════════════════════════════════════════
+//  TRON GRID
+// ═══════════════════════════════════════════════════════════
+function makeGrid() {
+  const geo = new THREE.PlaneGeometry(280, 280, 55, 55);
+  const mat = new THREE.MeshBasicMaterial({
+    color: 0x001144, wireframe: true, transparent: true, opacity: 0.12,
+  });
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.rotation.x = -Math.PI / 2;
+  mesh.position.y = -28;
+  scene.add(mesh);
+  return mesh;
+}
+
+// ═══════════════════════════════════════════════════════════
+//  CENTRAL HUB
+// ═══════════════════════════════════════════════════════════
+function makeHub() {
+  const g = new THREE.Group();
+
+  const core = new THREE.Mesh(
+    new THREE.IcosahedronGeometry(5.5, 3),
+    new THREE.MeshPhysicalMaterial({
+      color: 0x0033cc, emissive: 0x0022aa, emissiveIntensity: 1.8,
+      metalness: 0.9, roughness: 0.05,
+    })
+  );
+  g.add(core);
+
+  // Rotating rings
+  const rings = [7.5, 10, 13].map((r, i) => {
+    const ring = new THREE.Mesh(
+      new THREE.TorusGeometry(r, 0.22 - i * 0.04, 8, 80),
+      new THREE.MeshBasicMaterial({
+        color: [0x4477ff, 0x2255ee, 0x1133cc][i],
+        transparent: true, opacity: [0.7, 0.5, 0.35][i],
+      })
+    );
+    ring.rotation.x = [Math.PI / 2, Math.PI / 3, -Math.PI / 4][i];
+    ring.rotation.z = [0, Math.PI / 5, Math.PI / 3][i];
+    g.add(ring);
+    return ring;
+  });
+
+  // Atmosphere
+  const atmos = new THREE.Mesh(
+    new THREE.SphereGeometry(8, 32, 32),
+    new THREE.MeshBasicMaterial({
+      color: 0x2244ff, transparent: true, opacity: 0.06, side: THREE.BackSide,
+    })
+  );
+  g.add(atmos);
+
+  // CSS2D label
+  const el = document.createElement('div');
+  el.className = 'hub-label';
+  el.textContent = '🚀 NEXUS HUB';
+  const label = new CSS2DObject(el);
+  label.position.set(0, 9, 0);
+  scene.add(label); // directly in scene so it doesn't spin with hub
+
+  scene.add(g);
+  return { g, core, rings, atmos };
+}
+
+// ═══════════════════════════════════════════════════════════
+//  ORBIT PATH
+// ═══════════════════════════════════════════════════════════
+function makeOrbitPath(cat) {
+  const pts = [];
+  for (let i = 0; i <= 128; i++) {
+    const a = (i / 128) * Math.PI * 2;
+    pts.push(new THREE.Vector3(
+      Math.cos(a) * cat.orbitR,
+      Math.sin(a) * cat.orbitR * Math.sin(cat.orbitTilt),
+      Math.sin(a) * cat.orbitR
+    ));
+  }
+  const geo = new THREE.BufferGeometry().setFromPoints(pts);
+  const mat = new THREE.LineBasicMaterial({
+    color: cat.hex, transparent: true, opacity: 0.12,
+  });
+  const line = new THREE.Line(geo, mat);
+  scene.add(line);
+  return line;
+}
+
+// ═══════════════════════════════════════════════════════════
+//  CATEGORY PLANET
+// ═══════════════════════════════════════════════════════════
+function makePlanet(cat, catIdx) {
+  const grp = new THREE.Group();
+  const pSize = 2.2 + cat.apps.length * 0.08;
+
+  // Planet mesh
+  const planet = new THREE.Mesh(
+    new THREE.IcosahedronGeometry(pSize, 4),
+    new THREE.MeshPhysicalMaterial({
+      color: cat.hex, emissive: cat.hex, emissiveIntensity: 0.45,
+      metalness: 0.25, roughness: 0.5,
+    })
+  );
+  planet.userData = { type: 'cat', cat, catIdx };
+  grp.add(planet);
+
+  // Atmosphere halo
+  const halo = new THREE.Mesh(
+    new THREE.SphereGeometry(pSize * 1.4, 24, 24),
+    new THREE.MeshBasicMaterial({
+      color: cat.hex, transparent: true, opacity: 0.07, side: THREE.BackSide,
+    })
+  );
+  grp.add(halo);
+
+  // Ring for even-indexed categories
+  let ring = null;
+  if (catIdx % 2 === 0) {
+    ring = new THREE.Mesh(
+      new THREE.TorusGeometry(pSize * 1.9, 0.13, 6, 64),
+      new THREE.MeshBasicMaterial({ color: cat.hex, transparent: true, opacity: 0.55 })
+    );
+    ring.rotation.x = Math.PI / 2.5;
+    grp.add(ring);
+  }
+
+  // CSS2D label
+  const el = document.createElement('div');
+  el.className = 'cat-label';
+  el.style.color = cat.color;
+  el.style.borderColor = cat.color;
+  el.innerHTML = `${cat.emoji} ${cat.short} <span style="opacity:.5;font-size:10px">${cat.apps.length}</span>`;
+  const lbl = new CSS2DObject(el);
+  lbl.position.set(0, pSize + 2.2, 0);
+  grp.add(lbl);
+
+  // Point light
+  const pl = new THREE.PointLight(cat.hex, 1.2, 30);
+  grp.add(pl);
+
+  scene.add(grp);
+  return { grp, planet, halo, ring, cat };
+}
+
+// ═══════════════════════════════════════════════════════════
+//  APP NODE
+// ═══════════════════════════════════════════════════════════
+function makeAppNode(app, cat, idx, total) {
+  const grp = new THREE.Group();
+  const baseAngle = (idx / total) * Math.PI * 2;
+  const r = 5.5 + Math.random() * 2.5;
+  const ht = (Math.random() - 0.5) * 4.5;
+  const spd = 0.9 + Math.random() * 1.8;
+
+  grp.userData = {
+    type: 'app', app, cat,
+    baseAngle, r, ht, spd,
+    discovered: false,
+  };
+  grp.position.set(Math.cos(baseAngle) * r, ht, Math.sin(baseAngle) * r);
+
+  const sphere = new THREE.Mesh(
+    new THREE.SphereGeometry(0.38, 10, 10),
+    new THREE.MeshPhysicalMaterial({
+      color: cat.hex, emissive: cat.hex, emissiveIntensity: 0.7,
+      metalness: 0.5, roughness: 0.2,
+    })
+  );
+  sphere.userData = grp.userData;
+  grp.add(sphere);
+
+  // App label (hidden by default)
+  const el = document.createElement('div');
+  el.className = 'app-label';
+  el.style.color = cat.color;
+  el.style.borderColor = cat.color;
+  el.textContent = app.name;
+  el.style.display = 'none';
+  const lbl = new CSS2DObject(el);
+  lbl.position.set(0, 0.75, 0);
+  grp.add(lbl);
+
+  grp.userData.sphere = sphere;
+  grp.userData.labelEl = el;
+
+  return grp;
+}
+
+// ═══════════════════════════════════════════════════════════
+//  AMBIENT PARTICLES
+// ═══════════════════════════════════════════════════════════
+function makeParticles() {
+  const N = 220;
+  const pos = new Float32Array(N * 3);
+  const vel = new Float32Array(N * 3);
+  const col = new Float32Array(N * 3);
+  for (let i = 0; i < N; i++) {
+    pos[i*3]   = (Math.random() - 0.5) * 120;
+    pos[i*3+1] = (Math.random() - 0.5) * 60;
+    pos[i*3+2] = (Math.random() - 0.5) * 120;
+    vel[i*3]   = (Math.random() - 0.5) * 0.018;
+    vel[i*3+1] = (Math.random() - 0.5) * 0.009;
+    vel[i*3+2] = (Math.random() - 0.5) * 0.018;
+    const c = new THREE.Color().setHSL(Math.random(), 1, 0.65);
+    col[i*3] = c.r; col[i*3+1] = c.g; col[i*3+2] = c.b;
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  geo.setAttribute('color',    new THREE.BufferAttribute(col, 3));
+  const mat = new THREE.PointsMaterial({
+    size: 0.28, vertexColors: true, transparent: true,
+    opacity: 0.55, blending: THREE.AdditiveBlending, depthWrite: false,
+  });
+  const pts = new THREE.Points(geo, mat);
+  scene.add(pts);
+  return { pts, vel };
+}
+
+// ═══════════════════════════════════════════════════════════
+//  CONNECTION LINES (hub → planet)
+// ═══════════════════════════════════════════════════════════
+function makeConnLines() {
+  return CATEGORIES.map(cat => {
+    const geo = new THREE.BufferGeometry().setFromPoints([
+      new THREE.Vector3(0,0,0), new THREE.Vector3(0,0,0),
+    ]);
+    const mat = new THREE.LineBasicMaterial({
+      color: cat.hex, transparent: true, opacity: 0.18,
+    });
+    const line = new THREE.Line(geo, mat);
+    scene.add(line);
+    return line;
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+//  BUILD SCENE
+// ═══════════════════════════════════════════════════════════
+const { pts: stars, mat: starMat } = makeStars();
+makeNebula();
+makeGrid();
+const hub = makeHub();
+
+const catObjs = CATEGORIES.map((cat, i) => {
+  makeOrbitPath(cat);
+  const obj = makePlanet(cat, i);
+  obj.appNodes = cat.apps.map((app, j) => {
+    const node = makeAppNode(app, cat, j, cat.apps.length);
+    obj.grp.add(node);
+    return node;
+  });
+  return obj;
+});
+
+const { pts: particles, vel: pVel } = makeParticles();
+const connLines = makeConnLines();
+
+// Collect all raycaster targets
+const rayTargets = [];
+catObjs.forEach(o => {
+  rayTargets.push(o.planet);
+  o.appNodes.forEach(n => rayTargets.push(n.userData.sphere));
+});
+
+// ═══════════════════════════════════════════════════════════
+//  SIDEBAR
+// ═══════════════════════════════════════════════════════════
+function buildSidebar() {
+  const sb = document.getElementById('sidebar');
+  sb.innerHTML = '';
+  CATEGORIES.forEach((cat, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'cat-btn';
+    btn.style.color = cat.color;
+    btn.dataset.catIdx = i;
+    btn.innerHTML = `
+      ${cat.emoji} ${cat.short}
+      <div class="cat-prog-wrap">
+        <div class="cat-prog-fill" id="prog-${cat.id}" style="background:${cat.color};width:0%"></div>
+      </div>
+      <span class="app-count-badge" id="found-${cat.id}">0/${cat.apps.length}</span>`;
+    btn.addEventListener('click', () => focusCategory(i));
+    sb.appendChild(btn);
+  });
+}
+
+function updateSidebar() {
+  CATEGORIES.forEach(cat => {
+    const n = cat.apps.filter(a => G.found.has(a.name)).length;
+    const pct = (n / cat.apps.length) * 100;
+    const bar = document.getElementById(`prog-${cat.id}`);
+    const cnt = document.getElementById(`found-${cat.id}`);
+    if (bar) bar.style.width = pct + '%';
+    if (cnt) cnt.textContent = `${n}/${cat.apps.length}`;
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+//  CAMERA ANIMATION
+// ═══════════════════════════════════════════════════════════
+function lerpCam(targetPos, targetLook, ms, cb) {
+  const p0 = camera.position.clone();
+  const l0 = controls.target.clone();
+  const t0 = Date.now();
+  function step() {
+    const t = Math.min((Date.now() - t0) / ms, 1);
+    const e = t < 0.5 ? 4*t*t*t : 1 - Math.pow(-2*t+2,3)/2;
+    camera.position.lerpVectors(p0, targetPos, e);
+    controls.target.lerpVectors(l0, targetLook, e);
+    controls.update();
+    if (t < 1) requestAnimationFrame(step);
+    else { G.animating = false; if (cb) cb(); }
+  }
+  G.animating = true;
+  requestAnimationFrame(step);
+}
+
+// ═══════════════════════════════════════════════════════════
+//  CATEGORY FOCUS
+// ═══════════════════════════════════════════════════════════
+function focusCategory(idx) {
+  if (G.animating) return;
+  const cat  = CATEGORIES[idx];
+  const cObj = catObjs[idx];
+  G.selectedCat = idx;
+  G.visitedCats.add(cat.id);
+  controls.autoRotate = false;
+  document.getElementById('reset-btn').classList.add('visible');
+
+  // Warp flash
+  const origStr = bloomPass.strength;
+  bloomPass.strength = 4;
+  setTimeout(() => { bloomPass.strength = origStr; }, 180);
+
+  const wp = new THREE.Vector3();
+  cObj.grp.getWorldPosition(wp);
+  const camDir = new THREE.Vector3().subVectors(camera.position, wp).normalize();
+  const dest = wp.clone().add(camDir.multiplyScalar(16)).add(new THREE.Vector3(0, 4, 0));
+  lerpCam(dest, wp, 1400);
+
+  showCatInfo(cat, cObj);
+  // highlight sidebar
+  document.querySelectorAll('.cat-btn').forEach((b, i) => {
+    b.classList.toggle('active', i === idx);
+    b.style.setProperty('--col', CATEGORIES[i].color);
+  });
+  checkAchs();
+}
+
+function resetView() {
+  G.selectedCat = null;
+  G.animating = true;
+  lerpCam(new THREE.Vector3(0, 42, 105), new THREE.Vector3(0, 0, 0), 1400, () => {
+    controls.autoRotate = true;
+  });
+  document.getElementById('info-panel').classList.remove('visible');
+  document.getElementById('reset-btn').classList.remove('visible');
+  document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+}
+
+// ═══════════════════════════════════════════════════════════
+//  APP SELECTION
+// ═══════════════════════════════════════════════════════════
+function selectApp(app, cat, sphere) {
+  const isNew = !G.found.has(app.name);
+  if (isNew) {
+    G.found.add(app.name);
+    addScore(50 * G.combo, sphere);
+    bumpCombo();
+    document.getElementById('apps-found').textContent = G.found.size;
+    updateSidebar();
+  } else {
+    addScore(10, sphere);
+  }
+
+  // Bounce animation
+  sphere.scale.set(2.2, 2.2, 2.2);
+  setTimeout(() => sphere.scale.set(1, 1, 1), 280);
+
+  showAppInfo(app, cat);
+  checkAchs();
+}
+
+// ═══════════════════════════════════════════════════════════
+//  SCORE & COMBO
+// ═══════════════════════════════════════════════════════════
+function addScore(pts, mesh) {
+  G.score += pts;
+  document.getElementById('score-val').textContent = G.score.toLocaleString();
+  if (mesh) spawnScorePop(`+${pts}`, mesh);
+  checkAchs();
+}
+
+function bumpCombo() {
+  G.combo = Math.min(G.combo + 1, 10);
+  G.maxCombo = Math.max(G.maxCombo, G.combo);
+  clearTimeout(G.comboTimer);
+  G.comboTimer = setTimeout(() => { G.combo = 1; refreshCombo(); }, 3200);
+  refreshCombo();
+}
+
+function refreshCombo() {
+  const el = document.getElementById('combo-el');
+  document.getElementById('combo-val').textContent = G.combo;
+  el.style.display = G.combo > 1 ? 'block' : 'none';
+}
+
+function spawnScorePop(txt, mesh) {
+  const wp = new THREE.Vector3();
+  mesh.getWorldPosition(wp);
+  wp.project(camera);
+  const x = (wp.x  * 0.5 + 0.5) * innerWidth;
+  const y = (-wp.y * 0.5 + 0.5) * innerHeight;
+  const el = document.createElement('div');
+  el.className = 'score-pop';
+  el.textContent = txt;
+  el.style.left = x + 'px';
+  el.style.top  = y + 'px';
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 1200);
+}
+
+// ═══════════════════════════════════════════════════════════
+//  ACHIEVEMENTS
+// ═══════════════════════════════════════════════════════════
+function checkAchs() {
+  ACHIEVEMENTS.forEach(a => {
+    if (!G.unlockedAch.has(a.id) && a.check(G)) {
+      G.unlockedAch.add(a.id);
+      showAch(a);
+      addScore(200);
+      document.getElementById('ach-count').textContent = G.unlockedAch.size;
+    }
+  });
+}
+
+function showAch(a) {
+  const wrap = document.getElementById('ach-container');
+  const el = document.createElement('div');
+  el.className = 'ach-toast';
+  el.innerHTML = `
+    <div class="ach-label">🏆 Achievement Unlocked</div>
+    <div class="ach-name">${a.name}</div>
+    <div class="ach-desc">${a.desc}</div>`;
+  wrap.appendChild(el);
+  setTimeout(() => el.remove(), 4100);
+}
+
+// ═══════════════════════════════════════════════════════════
+//  INFO PANEL
+// ═══════════════════════════════════════════════════════════
+function showAppInfo(app, cat) {
+  document.getElementById('info-icon').textContent = cat.emoji;
+  document.getElementById('info-name').textContent = app.name;
+  document.getElementById('info-cat').textContent = cat.name;
+  document.getElementById('info-platforms').innerHTML =
+    app.p.map(pl => `<span class="platform-badge badge-${pl.toLowerCase()}">${pl}</span>`).join('');
+  document.getElementById('info-score').textContent =
+    G.found.has(app.name) ? '✓ Discovered' : `+${50 * G.combo} pts`;
+  const panel = document.getElementById('info-panel');
+  panel.classList.remove('visible');
+  void panel.offsetWidth;
+  panel.classList.add('visible');
+  clearTimeout(panel._timer);
+  panel._timer = setTimeout(() => panel.classList.remove('visible'), 5500);
+}
+
+function showCatInfo(cat, cObj) {
+  const found = cat.apps.filter(a => G.found.has(a.name)).length;
+  document.getElementById('info-icon').textContent = cat.emoji;
+  document.getElementById('info-name').textContent = cat.name;
+  document.getElementById('info-cat').textContent = `${found}/${cat.apps.length} apps discovered`;
+  document.getElementById('info-platforms').innerHTML = '';
+  document.getElementById('info-score').textContent = '';
+  const panel = document.getElementById('info-panel');
+  panel.classList.remove('visible');
+  void panel.offsetWidth;
+  panel.classList.add('visible');
+}
+
+// ═══════════════════════════════════════════════════════════
+//  RAYCASTING
+// ═══════════════════════════════════════════════════════════
+const ray  = new THREE.Raycaster();
+const mouse = new THREE.Vector2(-999, -999);
+
+window.addEventListener('mousemove', e => {
+  mouse.x = (e.clientX / innerWidth)  *  2 - 1;
+  mouse.y = (e.clientY / innerHeight) * -2 + 1;
+
+  const tt = document.getElementById('tooltip');
+  if (G.hoveredMesh) {
+    tt.style.left = (e.clientX + 14) + 'px';
+    tt.style.top  = (e.clientY - 10) + 'px';
+  }
+});
+
+function doHover() {
+  ray.setFromCamera(mouse, camera);
+  const hits = ray.intersectObjects(rayTargets);
+
+  // Restore previous hovered
+  if (G.hoveredMesh) {
+    const h = G.hoveredMesh;
+    if (h.userData.type === 'cat')
+      h.material.emissiveIntensity = 0.45;
+    else if (h.userData.type === 'app') {
+      h.material.emissiveIntensity = 0.7;
+      if (h.parent && h.parent.userData.labelEl)
+        h.parent.userData.labelEl.style.display = 'none';
+    }
+    G.hoveredMesh = null;
+    document.body.style.cursor = 'default';
+    document.getElementById('crosshair').classList.remove('active');
+    document.getElementById('tooltip').style.display = 'none';
+  }
+
+  if (!hits.length) return;
+  const h = hits[0].object;
+  G.hoveredMesh = h;
+  document.body.style.cursor = 'pointer';
+  document.getElementById('crosshair').classList.add('active');
+
+  if (h.userData.type === 'cat') {
+    h.material.emissiveIntensity = 1.2;
+    const tt = document.getElementById('tooltip');
+    tt.style.display = 'block';
+    tt.textContent = h.userData.cat.name;
+  } else if (h.userData.type === 'app') {
+    h.material.emissiveIntensity = 2.0;
+    if (h.parent && h.parent.userData.labelEl)
+      h.parent.userData.labelEl.style.display = 'block';
+    const tt = document.getElementById('tooltip');
+    tt.style.display = 'block';
+    tt.textContent = h.userData.app.name + ' · ' + h.userData.app.p.join(', ');
+  }
+}
+
+window.addEventListener('click', e => {
+  if (e.target.id !== 'three-canvas' &&
+      !e.target.closest('#labels') &&
+      e.target !== labelRenderer.domElement) return;
+  if (!G.hoveredMesh) return;
+  const h = G.hoveredMesh;
+  if (h.userData.type === 'cat') {
+    const idx = h.userData.catIdx;
+    focusCategory(idx);
+  } else if (h.userData.type === 'app') {
+    selectApp(h.userData.app, h.userData.cat, h);
+  }
+});
+
+window.addEventListener('dblclick', e => {
+  if (G.selectedCat !== null) resetView();
+});
+
+// ═══════════════════════════════════════════════════════════
+//  SEARCH
+// ═══════════════════════════════════════════════════════════
+document.getElementById('search-input').addEventListener('input', e => {
+  G.searchQ = e.target.value.toLowerCase();
+  G.searched = G.searched || G.searchQ.length > 0;
+  catObjs.forEach(cObj => {
+    cObj.appNodes.forEach(node => {
+      const match = !G.searchQ || node.userData.app.name.toLowerCase().includes(G.searchQ);
+      const sp = node.userData.sphere;
+      sp.material.transparent = !match;
+      sp.material.opacity = match ? 1 : 0.15;
+    });
+  });
+  if (G.searched) checkAchs();
+});
+
+// ═══════════════════════════════════════════════════════════
+//  PLATFORM FILTER
+// ═══════════════════════════════════════════════════════════
+document.querySelectorAll('.filter-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    G.filter = btn.dataset.filter;
+    catObjs.forEach(cObj => {
+      cObj.appNodes.forEach(node => {
+        const visible = G.filter === 'all' || node.userData.app.p.includes(G.filter);
+        node.userData.sphere.visible = visible;
+      });
+    });
+  });
+});
+
+// ═══════════════════════════════════════════════════════════
+//  AUTO-TOUR
+// ═══════════════════════════════════════════════════════════
+function startTour() {
+  G.autoTour = true; G.toured = true; G.tourIdx = 0;
+  runTour();
+}
+function stopTour() { G.autoTour = false; clearTimeout(G.tourTimer); }
+function runTour() {
+  if (!G.autoTour) return;
+  const idx = G.tourIdx % CATEGORIES.length;
+  focusCategory(idx);
+  G.tourIdx++;
+  if (G.tourIdx >= CATEGORIES.length) { stopTour(); checkAchs(); return; }
+  G.tourTimer = setTimeout(runTour, 3200);
+}
+
+// ═══════════════════════════════════════════════════════════
+//  KEYBOARD
+// ═══════════════════════════════════════════════════════════
+window.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { stopTour(); resetView(); }
+  if (e.key === ' ')      { e.preventDefault(); G.autoTour ? stopTour() : startTour(); }
+  if (e.key >= '1' && e.key <= '7') focusCategory(+e.key - 1);
+});
+
+// ═══════════════════════════════════════════════════════════
+//  RESET BUTTON
+// ═══════════════════════════════════════════════════════════
+document.getElementById('reset-btn').addEventListener('click', () => { stopTour(); resetView(); });
+
+// ═══════════════════════════════════════════════════════════
+//  RESIZE
+// ═══════════════════════════════════════════════════════════
+window.addEventListener('resize', () => {
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+  labelRenderer.setSize(innerWidth, innerHeight);
+  composer.setSize(innerWidth, innerHeight);
+});
+
+// ═══════════════════════════════════════════════════════════
+//  ANIMATION LOOP
+// ═══════════════════════════════════════════════════════════
+const clock = new THREE.Clock();
+let T = 0;
+
+function animate() {
+  requestAnimationFrame(animate);
+  const dt = clock.getDelta();
+  T += dt;
+
+  // Star twinkle
+  starMat.uniforms.uTime.value = T;
+
+  // Hub animation
+  hub.g.rotation.y += dt * 0.28;
+  hub.core.rotation.x += dt * 0.12;
+  hub.core.rotation.z += dt * 0.09;
+  hub.rings[0].rotation.z += dt * 0.55;
+  hub.rings[1].rotation.z -= dt * 0.32;
+  hub.rings[2].rotation.y += dt * 0.24;
+  hub.atmos.material.opacity = 0.04 + Math.abs(Math.sin(T * 0.8)) * 0.06;
+  hubLight.intensity = 3.5 + Math.sin(T * 1.9) * 1.5;
+
+  // Orbit + app animation
+  catObjs.forEach((cObj, ci) => {
+    const cat = cObj.cat;
+    const a   = cat.orbitOff + T * cat.orbitSpd;
+    cObj.grp.position.set(
+      Math.cos(a) * cat.orbitR,
+      Math.sin(a) * cat.orbitR * Math.sin(cat.orbitTilt),
+      Math.sin(a) * cat.orbitR
+    );
+    cObj.planet.rotation.y += dt * (0.28 + ci * 0.04);
+    cObj.halo.material.opacity = 0.04 + Math.sin(T * 1.2 + ci) * 0.03;
+    if (cObj.ring) cObj.ring.rotation.y += dt * 0.6;
+
+    // App nodes orbit
+    cObj.appNodes.forEach((node, ni) => {
+      const ud  = node.userData;
+      const ang = ud.baseAngle + T * ud.spd;
+      node.position.set(
+        Math.cos(ang) * ud.r,
+        ud.ht + Math.sin(T * 0.4 + ni * 0.7) * 0.35,
+        Math.sin(ang) * ud.r
+      );
+    });
+
+    // Connection line to hub
+    const wp = new THREE.Vector3();
+    cObj.grp.getWorldPosition(wp);
+    const pos = connLines[ci].geometry.attributes.position;
+    pos.setXYZ(1, wp.x, wp.y, wp.z);
+    pos.needsUpdate = true;
+  });
+
+  // Ambient particles
+  const pa = particles.geometry.attributes.position.array;
+  for (let i = 0; i < pa.length / 3; i++) {
+    pa[i*3]   += pVel[i*3];
+    pa[i*3+1] += pVel[i*3+1];
+    pa[i*3+2] += pVel[i*3+2];
+    if (Math.abs(pa[i*3])   > 65) pVel[i*3]   *= -1;
+    if (Math.abs(pa[i*3+1]) > 35) pVel[i*3+1] *= -1;
+    if (Math.abs(pa[i*3+2]) > 65) pVel[i*3+2] *= -1;
+  }
+  particles.geometry.attributes.position.needsUpdate = true;
+
+  // Slow star rotation
+  stars.rotation.y += dt * 0.008;
+
+  // Hover
+  doHover();
+
+  controls.update();
+
+  // FPS
+  G.frames++;
+  const now = Date.now();
+  if (now - G.fpsLast > 1000) {
+    document.getElementById('fps-val').textContent = G.frames;
+    G.frames = 0; G.fpsLast = now;
+  }
+
+  composer.render();
+  labelRenderer.render(scene, camera);
+}
+
+// ═══════════════════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════════════════
+buildSidebar();
+// Update total count from constant
+document.getElementById('apps-total').textContent = TOTAL_APPS;
+animate();
+
+// Welcome message
+setTimeout(() => {
+  showAch({ name: '🌌 Welcome to the Galaxy!', desc: 'You have entered the Nexus App Galaxy — click a planet to explore!' });
+}, 3200);
+
+// Hide loader
+setTimeout(() => {
+  document.getElementById('loader').classList.add('hidden');
+  setTimeout(() => document.getElementById('loader').remove(), 900);
+}, 2600);
+
+</script>
+</body>
+</html>
